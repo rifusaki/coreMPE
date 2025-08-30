@@ -1,0 +1,1 @@
+recursive-include src/adenzu_panel/ai-models *.pt

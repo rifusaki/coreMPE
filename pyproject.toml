@@ -1,0 +1,30 @@
+[project]
+name = "adenzu-manga-panel-extractor-src"
+version = "0.1.0"
+description = "A tool originally by adenzu for detecting manga panel positions. This repository keeps only the core src code and adds pyproject.toml support."
+authors = [
+    { name = "avan06" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "opencv-contrib-python",
+    "tqdm",
+    "torch",
+    "yolov5",
+    "manga-panel-processor @ git+https://github.com/avan06/manga-panel-processor.git"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"adenzu_panel" = ["ai-models/**/*.pt"]
