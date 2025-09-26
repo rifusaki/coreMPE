@@ -471,22 +471,15 @@ def extract_panels_for_images_in_folder_recursive(
     Recursively extracts panels from all images under input_dir (including subdirectories).
     Output preserves folder structure under output_dir.
     """
-    if not os.path.exists(output_dir):
-        return (0, 0)
+    os.makedirs(output_dir, exist_ok=True)
 
-    files = _collect_images(input_dir)
-    num_files = len(files)
+    image_files = _collect_images(input_dir)
+    num_files = len(image_files)
     num_panels = 0
 
     with tqdm(total=num_files, desc="Extracting panels") as pbar:
-        for input_path in files:
+        for input_path in image_files:
             image = load_image(os.path.dirname(input_path), input_path)
-
-            rel_dir = os.path.relpath(os.path.dirname(input_path), input_dir)
-            out_dir = os.path.join(output_dir, rel_dir)
-            os.makedirs(out_dir, exist_ok=True)
-
-            image_name, image_ext = os.path.splitext(image.image_name)
             panel_blocks = generate_panel_blocks(
                 image.image,
                 fallback=fallback,
@@ -495,7 +488,8 @@ def extract_panels_for_images_in_folder_recursive(
                 merge=merge
             )
             for j, panel in enumerate(panel_blocks):
-                out_path = os.path.join(out_dir, f"{image_name}_{j}{image_ext}")
+                out_path = _make_output_path(input_path, input_dir, output_dir, j)
+                os.makedirs(os.path.dirname(out_path), exist_ok=True)
                 cv2.imwrite(out_path, panel)
             num_panels += len(panel_blocks)
             pbar.update(1)
@@ -532,8 +526,7 @@ def extract_panels_for_images_in_folder_by_ai_recursive(
     Recursively extracts panels using AI from all images under input_dir (including subdirectories).
     Output preserves folder structure under output_dir.
     """
-    if not os.path.exists(output_dir):
-        return (0, 0)
+    os.makedirs(output_dir, exist_ok=True)
 
     image_files = _collect_images(input_dir)
     num_files = len(image_files)
@@ -542,15 +535,10 @@ def extract_panels_for_images_in_folder_by_ai_recursive(
     with tqdm(total=num_files, desc="Extracting panels (AI)") as pbar:
         for input_path in image_files:
             image = load_image(os.path.dirname(input_path), input_path)
-
-            rel_dir = os.path.relpath(os.path.dirname(input_path), input_dir)
-            out_dir = os.path.join(output_dir, rel_dir)
-            os.makedirs(out_dir, exist_ok=True)
-
-            image_name, image_ext = os.path.splitext(image.image_name)
             panel_blocks = generate_panel_blocks_by_ai(image.image)
             for j, panel in enumerate(panel_blocks):
-                out_path = os.path.join(out_dir, f"{image_name}_{j}{image_ext}")
+                out_path = _make_output_path(input_path, input_dir, output_dir, j)
+                os.makedirs(os.path.dirname(out_path), exist_ok=True)
                 cv2.imwrite(out_path, panel)
             num_panels += len(panel_blocks)
             pbar.update(1)
@@ -565,3 +553,10 @@ def _collect_images(input_dir: str) -> list[str]:
             if file.lower().endswith((".jpg", ".jpeg", ".png")):
                 image_files.append(os.path.join(root, file))
     return sorted(image_files)
+
+def _make_output_path(input_path: str, input_dir: str, output_dir: str, suffix: str) -> str:
+    """Create mirrored output path under output_dir, preserving subfolder structure."""
+    rel_path = os.path.relpath(input_path, input_dir)  # e.g. "chapter01/page_001.jpg"
+    rel_root, ext = os.path.splitext(rel_path)
+    out_rel = f"{rel_root}_{suffix}{ext}"             # add suffix before extension
+    return os.path.join(output_dir, out_rel)
